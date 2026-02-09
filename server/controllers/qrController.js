@@ -12,14 +12,14 @@ const generateQR = async (req, res) => {
     const qrCodeDataURL = await QRCode.toDataURL(publicUrl);
     
     // Save session
-    const [result] = await pool.query(
+    const [result] = await pool.execute(
       `INSERT INTO qr_sessions (admin_id, session_token, qr_code, public_url) 
        VALUES (?, ?, ?, ?)`,
       [admin_id, sessionToken, qrCodeDataURL, publicUrl]
     );
     
     // Fetch the complete session data including created_at
-    const [sessionData] = await pool.query(
+    const [sessionData] = await pool.execute(
       'SELECT * FROM qr_sessions WHERE id = ?',
       [result.insertId]
     );
@@ -36,7 +36,7 @@ const getActiveSessions = async (req, res) => {
   try {
     const { admin_id } = req.user;
     
-    const [sessions] = await pool.query(
+    const [sessions] = await pool.execute(
       `SELECT * FROM qr_sessions 
        WHERE admin_id = ? AND is_active = TRUE 
        ORDER BY created_at DESC`,
@@ -56,7 +56,7 @@ const deleteSession = async (req, res) => {
     const { admin_id } = req.user;
     
     // Verify session belongs to admin
-    const [sessions] = await pool.query(
+    const [sessions] = await pool.execute(
       'SELECT * FROM qr_sessions WHERE id = ? AND admin_id = ?',
       [session_id, admin_id]
     );
@@ -66,7 +66,7 @@ const deleteSession = async (req, res) => {
     }
     
     // Soft delete by setting is_active to false
-    await pool.query(
+    await pool.execute(
       'UPDATE qr_sessions SET is_active = FALSE WHERE id = ?',
       [session_id]
     );

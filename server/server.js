@@ -10,6 +10,7 @@ const routes = require("./routes/");
 const { authenticateToken } = require("./middleware/auth");
 
 const app = express();
+app.set("trust proxy", 1);
 const server = http.createServer(app);
 const io = socketIo(server, {
   cors: {

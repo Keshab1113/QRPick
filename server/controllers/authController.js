@@ -6,7 +6,7 @@ const adminLogin = async (req, res) => {
   try {
     const { email, password } = req.body;
     
-    const [admins] = await pool.query(
+    const [admins] = await pool.execute(
       'SELECT * FROM admins WHERE email = ?',
       [email]
     );
@@ -49,7 +49,7 @@ const registerUser = async (req, res) => {
     const { name, koc_id, email, team, mobile, session_token } = req.body;
     
     // Find QR session
-    const [sessions] = await pool.query(
+    const [sessions] = await pool.execute(
       'SELECT * FROM qr_sessions WHERE session_token = ? AND is_active = TRUE',
       [session_token]
     );
@@ -61,7 +61,7 @@ const registerUser = async (req, res) => {
     const session = sessions[0];
     
     // Check if user with same email already exists in THIS session
-    const [existingByEmail] = await pool.query(
+    const [existingByEmail] = await pool.execute(
       'SELECT * FROM users WHERE email = ? AND qr_session_id = ? AND is_active = TRUE',
       [email, session.id]
     );
@@ -90,7 +90,7 @@ const registerUser = async (req, res) => {
     }
     
     // Check if KOC ID already exists in THIS session
-    const [existingByKocId] = await pool.query(
+    const [existingByKocId] = await pool.execute(
       'SELECT * FROM users WHERE koc_id = ? AND qr_session_id = ? AND is_active = TRUE',
       [koc_id, session.id]
     );
@@ -105,7 +105,7 @@ const registerUser = async (req, res) => {
     // Additional check: Check if email exists globally (across all sessions) - optional
     // Uncomment if you want to prevent same email across different sessions
     /*
-    const [globalEmailCheck] = await pool.query(
+    const [globalEmailCheck] = await pool.execute(
       'SELECT * FROM users WHERE email = ? AND is_active = TRUE',
       [email]
     );
@@ -121,7 +121,7 @@ const registerUser = async (req, res) => {
     // Additional check: Check if KOC ID exists globally (across all sessions) - optional
     // Uncomment if you want to prevent same KOC ID across different sessions
     /*
-    const [globalKocCheck] = await pool.query(
+    const [globalKocCheck] = await pool.execute(
       'SELECT * FROM users WHERE koc_id = ? AND is_active = TRUE',
       [koc_id]
     );
@@ -135,7 +135,7 @@ const registerUser = async (req, res) => {
     */
     
     // Create user
-    const [result] = await pool.query(
+    const [result] = await pool.execute(
       `INSERT INTO users (name, koc_id, email, team, mobile, qr_session_id) 
        VALUES (?, ?, ?, ?, ?, ?)`,
       [name, koc_id, email, team, mobile, session.id]
@@ -200,7 +200,7 @@ const getUserSession = async (req, res) => {
     const sessionId = req.user.session_id;
     
     // Get all users in this session
-    const [users] = await pool.query(
+    const [users] = await pool.execute(
       `SELECT id, name, koc_id, team, created_at 
        FROM users 
        WHERE qr_session_id = ? AND is_active = TRUE 
@@ -209,7 +209,7 @@ const getUserSession = async (req, res) => {
     );
     
     // Get selected users
-    const [selected] = await pool.query(
+    const [selected] = await pool.execute(
       `SELECT su.*, u.name, u.koc_id, u.team 
        FROM selected_users su
        JOIN users u ON su.user_id = u.id

@@ -6,7 +6,7 @@ const getRegisteredUsers = async (req, res) => {
     const { session_id } = req.params;
     
     // Get users who are registered but NOT yet selected as winners
-    const [users] = await pool.query(
+    const [users] = await pool.execute(
       `SELECT u.id, u.name, u.koc_id, u.team, u.created_at 
        FROM users u
        WHERE u.qr_session_id = ? 
@@ -34,7 +34,7 @@ const performSpin = async (req, res) => {
     const io = req.app.get('socketio');
     
     // Get only users who haven't been selected yet
-    const [users] = await pool.query(
+    const [users] = await pool.execute(
       `SELECT u.id, u.name, u.koc_id, u.team
        FROM users u
        WHERE u.qr_session_id = ? 
@@ -58,7 +58,7 @@ const performSpin = async (req, res) => {
     const winner = users[Math.floor(Math.random() * users.length)];
     
     // Create spin record
-    const [spinResult] = await pool.query(
+    const [spinResult] = await pool.execute(
       `INSERT INTO spins (qr_session_id, spin_result) 
        VALUES (?, ?)`,
       [session_id, JSON.stringify({
@@ -70,7 +70,7 @@ const performSpin = async (req, res) => {
     );
     
     // Add to selected users
-    await pool.query(
+    await pool.execute(
       'INSERT INTO selected_users (spin_id, user_id) VALUES (?, ?)',
       [spinResult.insertId, winner.id]
     );
@@ -99,7 +99,7 @@ const getSelectedUsers = async (req, res) => {
   try {
     const { session_id } = req.params;
     
-    const [selected] = await pool.query(
+    const [selected] = await pool.execute(
       `SELECT su.id, su.created_at, u.name, u.koc_id, u.team, u.id as user_id
        FROM selected_users su
        JOIN users u ON su.user_id = u.id
@@ -120,7 +120,7 @@ const exportToExcel = async (req, res) => {
   try {
     const { session_id } = req.params;
     
-    const [selected] = await pool.query(
+    const [selected] = await pool.execute(
       `SELECT u.name, u.koc_id, u.email, u.team, u.mobile, 
               su.created_at as selected_at,
               ROW_NUMBER() OVER (ORDER BY su.created_at ASC) as selection_order
@@ -179,7 +179,7 @@ const exportRegisteredToExcel = async (req, res) => {
     const { session_id } = req.params;
     
     // Export ALL registered users (including selected ones)
-    const [registered] = await pool.query(
+    const [registered] = await pool.execute(
       `SELECT name, koc_id, email, team, mobile, created_at
        FROM users 
        WHERE qr_session_id = ? AND is_active = TRUE
@@ -209,7 +209,7 @@ const getAvailableUserCount = async (req, res) => {
   try {
     const { session_id } = req.params;
     
-    const [result] = await pool.query(
+    const [result] = await pool.execute(
       `SELECT COUNT(*) as available_count
        FROM users u
        WHERE u.qr_session_id = ? 
@@ -223,14 +223,14 @@ const getAvailableUserCount = async (req, res) => {
       [session_id, session_id]
     );
     
-    const [totalResult] = await pool.query(
+    const [totalResult] = await pool.execute(
       `SELECT COUNT(*) as total_count
        FROM users
        WHERE qr_session_id = ? AND is_active = TRUE`,
       [session_id]
     );
     
-    const [selectedResult] = await pool.query(
+    const [selectedResult] = await pool.execute(
       `SELECT COUNT(*) as selected_count
        FROM selected_users su
        JOIN spins s ON su.spin_id = s.id
