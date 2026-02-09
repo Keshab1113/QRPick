@@ -1,13 +1,19 @@
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { Toaster } from 'react-hot-toast';
-import { AuthProvider, useAuth } from './contexts/AuthContext';
-import { SocketProvider } from './contexts/SocketContext';
+import React from "react";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+} from "react-router-dom";
+import { Toaster } from "react-hot-toast";
+import { AuthProvider, useAuth } from "./contexts/AuthContext";
+import { SocketProvider } from "./contexts/SocketContext";
 
-import AdminLogin from './pages/AdminLogin';
-import AdminDashboard from './pages/AdminDashboard';
-import UserRegistration from './pages/UserRegistration';
-import UserView from './pages/UserView';
+import AdminLogin from "./pages/AdminLogin";
+import AdminDashboard from "./pages/AdminDashboard";
+import UserRegistration from "./pages/UserRegistration";
+import UserView from "./pages/UserView";
+import QRSessions from "./pages/QRSessions";
 
 // Protected Route Component
 const ProtectedRoute = ({ children, requireAdmin = false }) => {
@@ -24,14 +30,13 @@ const ProtectedRoute = ({ children, requireAdmin = false }) => {
     );
   }
 
-  console.log("user: ",user);
-  
+  console.log("user: ", user);
 
   if (!user) {
     return <Navigate to="/admin/login" replace />;
   }
 
-  if (requireAdmin && user.role !== 'admin') {
+  if (requireAdmin && user.role !== "admin") {
     return <Navigate to="/user/view" replace />;
   }
 
@@ -43,55 +48,64 @@ function App() {
     <Router>
       <AuthProvider>
         <SocketProvider>
-          <Toaster 
+          <Toaster
             position="top-right"
             toastOptions={{
               duration: 3000,
               style: {
-                background: '#333',
-                color: '#fff',
+                background: "#333",
+                color: "#fff",
               },
               success: {
                 iconTheme: {
-                  primary: '#10b981',
-                  secondary: '#fff',
+                  primary: "#10b981",
+                  secondary: "#fff",
                 },
               },
               error: {
                 iconTheme: {
-                  primary: '#ef4444',
-                  secondary: '#fff',
+                  primary: "#ef4444",
+                  secondary: "#fff",
                 },
               },
             }}
           />
-          
+
           <Routes>
             {/* Public Routes */}
             <Route path="/" element={<Navigate to="/admin/login" replace />} />
             <Route path="/admin/login" element={<AdminLogin />} />
             <Route path="/register/:token" element={<UserRegistration />} />
-            
+
             {/* Protected Admin Routes */}
-            <Route 
-              path="/admin" 
+            <Route
+              path="/admin"
               element={
                 <ProtectedRoute requireAdmin={true}>
                   <AdminDashboard />
                 </ProtectedRoute>
-              } 
+              }
             />
-            
+
             {/* Protected User Routes */}
-            <Route 
-              path="/user/view" 
+            <Route
+              path="/user/view"
               element={
                 <ProtectedRoute>
                   <UserView />
                 </ProtectedRoute>
-              } 
+              }
             />
-            
+
+            <Route
+              path="/admin/qr-sessions"
+              element={
+                <ProtectedRoute requireAdmin={true}>
+                  <QRSessions />
+                </ProtectedRoute>
+              }
+            />
+
             {/* 404 */}
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>

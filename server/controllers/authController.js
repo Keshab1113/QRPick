@@ -60,15 +60,14 @@ const registerUser = async (req, res) => {
     
     const session = sessions[0];
     
-    // Check if user already exists
-    const [existingUsers] = await pool.query(
-      'SELECT * FROM users WHERE email = ? OR koc_id = ?',
-      [email, koc_id]
+    // Check if user with same email already exists in THIS session
+    const [existingByEmail] = await pool.query(
+      'SELECT * FROM users WHERE email = ? AND qr_session_id = ? AND is_active = TRUE',
+      [email, session.id]
     );
     
-    if (existingUsers.length > 0) {
-      // Return existing user's token
-      const existingUser = existingUsers[0];
+    if (existingByEmail.length > 0) {
+      const existingUser = existingByEmail[0];
       const userToken = jwt.sign(
         { id: existingUser.id, email: existingUser.email, role: 'user', session_id: existingUser.qr_session_id },
         process.env.JWT_SECRET,
@@ -86,9 +85,54 @@ const registerUser = async (req, res) => {
           mobile: existingUser.mobile,
           session_id: existingUser.qr_session_id
         },
-        message: 'Welcome back! You were already registered.'
+        message: 'Welcome back! You were already registered for this session.'
       });
     }
+    
+    // Check if KOC ID already exists in THIS session
+    const [existingByKocId] = await pool.query(
+      'SELECT * FROM users WHERE koc_id = ? AND qr_session_id = ? AND is_active = TRUE',
+      [koc_id, session.id]
+    );
+    
+    if (existingByKocId.length > 0) {
+      return res.status(400).json({ 
+        error: 'This KOC ID is already registered for this session',
+        field: 'koc_id'
+      });
+    }
+    
+    // Additional check: Check if email exists globally (across all sessions) - optional
+    // Uncomment if you want to prevent same email across different sessions
+    /*
+    const [globalEmailCheck] = await pool.query(
+      'SELECT * FROM users WHERE email = ? AND is_active = TRUE',
+      [email]
+    );
+    
+    if (globalEmailCheck.length > 0) {
+      return res.status(400).json({ 
+        error: 'This email is already registered in another session',
+        field: 'email'
+      });
+    }
+    */
+    
+    // Additional check: Check if KOC ID exists globally (across all sessions) - optional
+    // Uncomment if you want to prevent same KOC ID across different sessions
+    /*
+    const [globalKocCheck] = await pool.query(
+      'SELECT * FROM users WHERE koc_id = ? AND is_active = TRUE',
+      [koc_id]
+    );
+    
+    if (globalKocCheck.length > 0) {
+      return res.status(400).json({ 
+        error: 'This KOC ID is already registered in another session',
+        field: 'koc_id'
+      });
+    }
+    */
     
     // Create user
     const [result] = await pool.query(
@@ -131,6 +175,18 @@ const registerUser = async (req, res) => {
     console.error('Registration error:', error);
     
     if (error.code === 'ER_DUP_ENTRY') {
+      // Parse which field caused the duplicate
+      if (error.message.includes('email')) {
+        return res.status(400).json({ 
+          error: 'This email is already registered',
+          field: 'email'
+        });
+      } else if (error.message.includes('koc_id')) {
+        return res.status(400).json({ 
+          error: 'This KOC ID is already registered',
+          field: 'koc_id'
+        });
+      }
       return res.status(400).json({ error: 'Email or KOC ID already registered' });
     }
     

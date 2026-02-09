@@ -1,16 +1,21 @@
-import React, { useState, useEffect } from 'react';
-import { useAuth } from '../contexts/AuthContext';
-import { useSocket } from '../contexts/SocketContext';
-import api from '../services/api';
-import DiceSpinner from '../components/DiceSpinner';
-import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
-import { Trophy, Users, Clock } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useState, useEffect } from "react";
+import { useAuth } from "../contexts/AuthContext";
+import { useSocket } from "../contexts/SocketContext";
+import api from "../services/api";
+import DiceSpinner from "../components/DiceSpinner";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "../components/ui/card";
+import { Trophy, Users, Clock } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 
 const UserView = () => {
   const { user } = useAuth();
   const { socket, connectToSession } = useSocket();
-  
+
   const [registeredUsers, setRegisteredUsers] = useState([]);
   const [selectedUsers, setSelectedUsers] = useState([]);
   const [isSpinning, setIsSpinning] = useState(false);
@@ -25,9 +30,9 @@ const UserView = () => {
   useEffect(() => {
     if (sessionId && socket) {
       connectToSession(sessionId);
-      socket.on('spin_result', handleSpinResult);
+      socket.on("spin_result", handleSpinResult);
       return () => {
-        socket.off('spin_result');
+        socket.off("spin_result");
       };
     }
   }, [sessionId, socket]);
@@ -35,12 +40,12 @@ const UserView = () => {
   const fetchUserData = async () => {
     try {
       // This would come from your API based on user's session
-      const response = await api.get('/user/session');
+      const response = await api.get("/user/session");
       setSessionId(response.data.session_id);
       setRegisteredUsers(response.data.users);
       setSelectedUsers(response.data.selected);
     } catch (error) {
-      console.error('Failed to fetch user data');
+      console.error("Failed to fetch user data");
     }
   };
 
@@ -49,14 +54,14 @@ const UserView = () => {
     setTimeout(() => {
       setIsSpinning(false);
       setLatestWinner(data.winner);
-      
+
       const newSelected = {
         id: Date.now(),
         name: data.winner.name,
         koc_id: data.winner.koc_id,
-        created_at: data.timestamp
+        created_at: data.timestamp,
       };
-      setSelectedUsers(prev => [newSelected, ...prev]);
+      setSelectedUsers((prev) => [newSelected, ...prev]);
     }, 3000);
   };
 
@@ -71,12 +76,14 @@ const UserView = () => {
                 Live Event Dashboard
               </h1>
               <p className="text-sm text-gray-600 dark:text-gray-400">
-                Welcome, {user?.name || 'Participant'}
+                Welcome, {user?.name || "Participant"}
               </p>
             </div>
             <div className="flex items-center gap-2 px-4 py-2 bg-primary/10 rounded-lg">
               <Users className="w-5 h-5 text-primary" />
-              <span className="font-semibold">{registeredUsers.length} Participants</span>
+              <span className="font-semibold">
+                {registeredUsers.length} Participants
+              </span>
             </div>
           </div>
         </div>
@@ -85,54 +92,9 @@ const UserView = () => {
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Left Panel - Participants */}
-          <Card className="lg:col-span-1">
+          <Card className="lg:col-span-2">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Users className="w-5 h-5" />
-                All Participants
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3 max-h-[500px] overflow-y-auto pr-2">
-                <AnimatePresence>
-                  {registeredUsers.map((participant, index) => (
-                    <motion.div
-                      key={participant.id}
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: index * 0.05 }}
-                      className={`flex items-center gap-3 p-3 rounded-lg border ${
-                        latestWinner?.id === participant.id
-                          ? 'bg-gradient-to-r from-yellow-50 to-amber-50 dark:from-yellow-950/20 dark:to-amber-950/20 border-yellow-200'
-                          : 'hover:bg-accent/50'
-                      }`}
-                    >
-                      <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-                        <span className="text-sm font-semibold text-primary">
-                          {participant.name.charAt(0)}
-                        </span>
-                      </div>
-                      <div className="flex-1">
-                        <p className="font-medium">{participant.name}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {participant.team} • KOC: {participant.koc_id}
-                        </p>
-                      </div>
-                      {latestWinner?.id === participant.id && (
-                        <Trophy className="w-5 h-5 text-yellow-500 animate-pulse" />
-                      )}
-                    </motion.div>
-                  ))}
-                </AnimatePresence>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Center Panel - Dice Spinner */}
-          <Card className="lg:col-span-1">
-            <CardHeader>
-              <CardTitle className="text-center">Live Spinner</CardTitle>
+              <CardTitle className="text-center">Live Dice Roll</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="relative">
@@ -141,7 +103,7 @@ const UserView = () => {
                     <div className="text-center">
                       <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
                       <p className="text-lg font-semibold animate-pulse">
-                        Spinning...
+                        Rolling...
                       </p>
                     </div>
                   </div>
@@ -154,12 +116,12 @@ const UserView = () => {
                   isAdmin={false}
                 />
               </div>
-              
+
               <div className="mt-8 text-center">
                 <div className="inline-flex items-center gap-2 px-4 py-2 bg-primary/10 rounded-lg">
                   <Clock className="w-4 h-4 text-primary" />
                   <span className="text-sm font-medium">
-                    Waiting for next spin...
+                    Waiting for next roll...
                   </span>
                 </div>
               </div>
@@ -194,21 +156,21 @@ const UserView = () => {
                           <p className="font-bold text-lg">{winner.name}</p>
                         </div>
                         <p className="text-sm text-muted-foreground">
-                          KOC ID: {winner.koc_id}
+                          {winner.team} • KOC ID: {winner.koc_id}
                         </p>
                         <div className="flex items-center gap-1 text-xs text-muted-foreground mt-2">
                           <Clock className="w-3 h-3" />
                           {new Date(winner.created_at).toLocaleTimeString([], {
-                            hour: '2-digit',
-                            minute: '2-digit',
-                            second: '2-digit'
+                            hour: "2-digit",
+                            minute: "2-digit",
+                            second: "2-digit",
                           })}
                         </div>
                       </div>
                     </motion.div>
                   ))}
                 </AnimatePresence>
-                
+
                 {selectedUsers.length === 0 && (
                   <div className="text-center py-8">
                     <Trophy className="w-12 h-12 mx-auto text-gray-400 mb-4" />

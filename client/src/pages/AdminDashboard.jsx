@@ -10,6 +10,7 @@ import {
   Copy,
   Check,
   Trophy,
+  Users,
 } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { useSocket } from "../contexts/SocketContext";
@@ -38,8 +39,12 @@ const AdminDashboard = () => {
   const [copied, setCopied] = useState(false);
 
   const handleNewUser = (newUser) => {
-    setRegisteredUsers((prev) => [newUser, ...prev]);
-    toast.success(`${newUser.name} just joined!`, { icon: "👋" });
+    // Only add if not already selected
+    const isAlreadySelected = selectedUsers.some(u => u.user_id === newUser.id);
+    if (!isAlreadySelected) {
+      setRegisteredUsers((prev) => [newUser, ...prev]);
+      toast.success(`${newUser.name} just joined!`, { icon: "👋" });
+    }
   };
 
   const fetchSessions = async () => {
@@ -57,6 +62,7 @@ const AdminDashboard = () => {
   const fetchRegisteredUsers = async () => {
     if (!activeSession) return;
     try {
+      // This now returns only users who haven't been selected
       const response = await api.get(`/session/${activeSession.id}/users`);
       setRegisteredUsers(response.data);
     } catch (error) {
@@ -81,59 +87,56 @@ const AdminDashboard = () => {
       return;
     }
 
+    if (registeredUsers.length === 0) {
+      toast.error("No users available to spin!");
+      return;
+    }
+
     setIsSpinning(true);
     try {
       await api.post(`/session/${activeSession.id}/spin`);
       // Result will come via socket
     } catch (error) {
-      toast.error("Spin failed");
+      const errorMsg = error.response?.data?.error || "Spin failed";
+      toast.error(errorMsg);
       setIsSpinning(false);
     }
   };
+
   const handleSpinResult = (data) => {
     setTimeout(() => {
       setIsSpinning(false);
       setLatestWinner(data.winner);
 
+      // Immediately remove winner from registered users
+      setRegisteredUsers((prev) =>
+        prev.filter((user) => user.id !== data.winner.id)
+      );
+
+      // Add winner to selected users at the END (chronological order)
       const newSelected = {
         id: Date.now(),
+        user_id: data.winner.id,
         name: data.winner.name,
         koc_id: data.winner.koc_id,
         team: data.winner.team,
         created_at: data.timestamp,
       };
 
-      // Add winner to selected users AT THE END (for chronological order)
       setSelectedUsers((prev) => [...prev, newSelected]);
 
-      // Remove winner from registered users
-      setRegisteredUsers((prev) =>
-        prev.filter((user) => user.id !== data.winner.id),
-      );
-
-      toast.success(`Winner: ${data.winner.name}`, {
-        icon: "🎉",
+      toast.success(`🎉 Winner: ${data.winner.name}`, {
         duration: 5000,
       });
-    }, 3000);
+    }, 5000); // Match the 5-second spinner duration
   };
 
-  // Also update the fetchSelectedUsers function to ensure proper ordering:
   const fetchSelectedUsers = async () => {
     if (!activeSession) return;
     try {
       const response = await api.get(`/session/${activeSession.id}/selected`);
-      // Sort by created_at in ascending order (oldest first)
-      const sortedSelected = response.data.sort(
-        (a, b) => new Date(a.created_at) - new Date(b.created_at),
-      );
-      setSelectedUsers(sortedSelected);
-
-      // Remove selected users from registered users list
-      const selectedIds = response.data.map((user) => user.id);
-      setRegisteredUsers((prev) =>
-        prev.filter((user) => !selectedIds.includes(user.id)),
-      );
+      // Already sorted by created_at ASC from backend
+      setSelectedUsers(response.data);
     } catch (error) {
       toast.error("Failed to fetch selected users");
     }
@@ -166,6 +169,28 @@ const AdminDashboard = () => {
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
     toast.success("Copied to clipboard");
+  };
+
+  const handleExportRegistered = async () => {
+    if (!activeSession) return;
+
+    try {
+      const response = await api.get(`/session/${activeSession.id}/export-registered`, {
+        responseType: "blob",
+      });
+
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", `registered_users_${activeSession.id}.xlsx`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+
+      toast.success("Exported successfully");
+    } catch (error) {
+      toast.error("Export failed");
+    }
   };
 
   useEffect(() => {
@@ -203,7 +228,7 @@ const AdminDashboard = () => {
           <div className="flex justify-between items-center">
             <div>
               <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-                🎲 Dice Spinner Admin
+                Drilling Group (N&WK)
               </h1>
               <p className="text-sm text-gray-600 dark:text-gray-400">
                 Welcome, {user?.name || "Admin"}
@@ -212,11 +237,11 @@ const AdminDashboard = () => {
             <div className="flex items-center space-x-4">
               <Button
                 variant="outline"
-                onClick={handleGenerateQR}
+                onClick={() => window.open("/admin/qr-sessions", "_blank")}
                 className="flex items-center gap-2"
               >
                 <QrCode className="w-4 h-4" />
-                Generate QR
+                Show QR
               </Button>
               <Button
                 variant="destructive"
@@ -233,79 +258,29 @@ const AdminDashboard = () => {
 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
-        {/* Session Selector */}
-        <div className="mb-8">
-          <Card>
-            <CardHeader>
-              <CardTitle>Active Session</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {activeSession ? (
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium">
-                        Session ID: {activeSession.id}
-                      </p>
-                      <p className="text-sm text-muted-foreground">
-                        Created:{" "}
-                        {new Date(
-                          activeSession.created_at,
-                        ).toLocaleDateString()}
-                      </p>
-                    </div>
-                    <Button
-                      variant="outline"
-                      onClick={() => copyToClipboard(activeSession.public_url)}
-                      className="flex items-center gap-2"
-                    >
-                      {copied ? (
-                        <Check className="w-4 h-4" />
-                      ) : (
-                        <Copy className="w-4 h-4" />
-                      )}
-                      Copy Registration Link
-                    </Button>
-                  </div>
-
-                  {activeSession.qr_code && (
-                    <div className="flex items-start gap-6">
-                      <img
-                        src={activeSession.qr_code}
-                        alt="QR Code"
-                        className="w-32 h-32 border rounded-lg"
-                      />
-                      <div className="flex-1">
-                        <h4 className="font-medium mb-2">Registration Link:</h4>
-                        <p className="text-sm text-muted-foreground break-all">
-                          {activeSession.public_url}
-                        </p>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div className="text-center py-8">
-                  <QrCode className="w-12 h-12 mx-auto text-gray-400 mb-4" />
-                  <p className="text-gray-600 dark:text-gray-400">
-                    No active session. Generate a QR code to get started.
-                  </p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
+        
 
         {/* Three Column Layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           {/* Left Panel - Registered Users */}
           <Card className="lg:col-span-1">
             <CardHeader>
               <CardTitle className="flex items-center justify-between">
-                <span>Registered Users</span>
-                <span className="text-sm font-normal bg-primary/10 text-primary px-2 py-1 rounded">
-                  {registeredUsers.length}
-                </span>
+                <span>Available Users</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-normal bg-primary/10 text-primary px-2 py-1 rounded">
+                    {registeredUsers.length}
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleExportRegistered}
+                    disabled={registeredUsers.length === 0}
+                    className="flex items-center gap-2"
+                  >
+                    <Download className="w-4 h-4" />
+                  </Button>
+                </div>
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -316,6 +291,7 @@ const AdminDashboard = () => {
                       key={user.id}
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, x: -100 }}
                       transition={{ delay: index * 0.05 }}
                       className="flex items-center justify-between p-3 rounded-lg border hover:bg-accent/50 transition-colors"
                     >
@@ -330,7 +306,19 @@ const AdminDashboard = () => {
                   ))}
                 </AnimatePresence>
 
-                {registeredUsers.length === 0 && (
+                {registeredUsers.length === 0 && selectedUsers.length > 0 && (
+                  <div className="text-center py-8">
+                    <Trophy className="w-12 h-12 mx-auto text-green-500 mb-4" />
+                    <p className="text-gray-600 dark:text-gray-400 font-medium">
+                      All users have been selected!
+                    </p>
+                    <p className="text-sm text-muted-foreground mt-2">
+                      {selectedUsers.length} winner{selectedUsers.length !== 1 ? 's' : ''} selected
+                    </p>
+                  </div>
+                )}
+
+                {registeredUsers.length === 0 && selectedUsers.length === 0 && (
                   <div className="text-center py-8">
                     <UserPlus className="w-12 h-12 mx-auto text-gray-400 mb-4" />
                     <p className="text-gray-600 dark:text-gray-400">
@@ -343,7 +331,7 @@ const AdminDashboard = () => {
           </Card>
 
           {/* Center Panel - Dice Spinner */}
-          <Card className="lg:col-span-1">
+          <Card className="lg:col-span-2">
             <CardHeader>
               <CardTitle className="text-center">Dice Spinner</CardTitle>
             </CardHeader>
@@ -371,7 +359,6 @@ const AdminDashboard = () => {
                   className="flex items-center gap-2"
                 >
                   <Download className="w-4 h-4" />
-                  Export
                 </Button>
               </CardTitle>
             </CardHeader>
@@ -403,8 +390,7 @@ const AdminDashboard = () => {
                         </div>
                       </div>
                       <div className="text-lg font-bold text-primary">
-                        #{index + 1}{" "}
-                        {/* This will now show correct chronological order */}
+                        #{index + 1}
                       </div>
                     </motion.div>
                   ))}
@@ -418,6 +404,46 @@ const AdminDashboard = () => {
                     </p>
                   </div>
                 )}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+        {/* Stats Bar */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 my-8">
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">Available for Spin</p>
+                  <p className="text-3xl font-bold text-primary">{registeredUsers.length}</p>
+                </div>
+                <Users className="w-12 h-12 text-primary/20" />
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">Already Selected</p>
+                  <p className="text-3xl font-bold text-green-600">{selectedUsers.length}</p>
+                </div>
+                <Trophy className="w-12 h-12 text-green-600/20" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">Total Registered</p>
+                  <p className="text-3xl font-bold text-blue-600">
+                    {registeredUsers.length + selectedUsers.length}
+                  </p>
+                </div>
+                <UserPlus className="w-12 h-12 text-blue-600/20" />
               </div>
             </CardContent>
           </Card>

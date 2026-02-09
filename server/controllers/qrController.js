@@ -18,12 +18,14 @@ const generateQR = async (req, res) => {
       [admin_id, sessionToken, qrCodeDataURL, publicUrl]
     );
     
-    res.json({
-      qr_code: qrCodeDataURL,
-      public_url: publicUrl,
-      session_token: sessionToken,
-      session_id: result.insertId
-    });
+    // Fetch the complete session data including created_at
+    const [sessionData] = await pool.query(
+      'SELECT * FROM qr_sessions WHERE id = ?',
+      [result.insertId]
+    );
+    
+    // Return the complete session object
+    res.json(sessionData[0]);
   } catch (error) {
     console.error('QR generation error:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -48,4 +50,32 @@ const getActiveSessions = async (req, res) => {
   }
 };
 
-module.exports = { generateQR, getActiveSessions };
+const deleteSession = async (req, res) => {
+  try {
+    const { session_id } = req.params;
+    const { admin_id } = req.user;
+    
+    // Verify session belongs to admin
+    const [sessions] = await pool.query(
+      'SELECT * FROM qr_sessions WHERE id = ? AND admin_id = ?',
+      [session_id, admin_id]
+    );
+    
+    if (sessions.length === 0) {
+      return res.status(404).json({ error: 'Session not found' });
+    }
+    
+    // Soft delete by setting is_active to false
+    await pool.query(
+      'UPDATE qr_sessions SET is_active = FALSE WHERE id = ?',
+      [session_id]
+    );
+    
+    res.json({ message: 'Session deleted successfully' });
+  } catch (error) {
+    console.error('Delete session error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+module.exports = { generateQR, getActiveSessions, deleteSession };

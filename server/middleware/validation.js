@@ -32,7 +32,8 @@ const schemas = {
     email: Joi.string().email().required(),
     team: Joi.string().min(2).max(100).required(),
     mobile: Joi.string().pattern(/^[0-9+\s()-]{10,20}$/).required(),
-    session_token: Joi.string().required()
+    session_token: Joi.string().required(),
+    otherTeam: Joi.string().allow('').optional()
   })
 };
 

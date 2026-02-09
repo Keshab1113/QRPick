@@ -1,57 +1,85 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { User, Mail, Hash, Users, Phone, ArrowRight } from 'lucide-react';
-import { useAuth } from '../contexts/AuthContext';
-import api from '../services/api';
-import toast from 'react-hot-toast';
-import {Button} from '../components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
+import React, { useState, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
+import { User, Mail, Hash, Users, Phone, ArrowRight } from "lucide-react";
+import { useAuth } from "../contexts/AuthContext";
+import api from "../services/api";
+import toast from "react-hot-toast";
+import { Button } from "../components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "../components/ui/card";
 
 const UserRegistration = () => {
   const { token } = useParams();
   const { register } = useAuth();
   const navigate = useNavigate();
-  
+
   const [formData, setFormData] = useState({
-    name: '',
-    koc_id: '',
-    email: '',
-    team: '',
-    mobile: ''
+    name: "",
+    koc_id: "",
+    email: "",
+    team: "",
+    otherTeam: "",
+    mobile: "",
   });
+
   const [loading, setLoading] = useState(false);
   const [sessionValid, setSessionValid] = useState(true);
 
   useEffect(() => {
     if (!token) {
       setSessionValid(false);
-      toast.error('Invalid registration link');
+      toast.error("Invalid registration link");
     }
   }, [token]);
 
   const handleChange = (e) => {
-    setFormData(prev => ({
+    const { name, value } = e.target;
+
+    setFormData((prev) => ({
       ...prev,
-      [e.target.name]: e.target.value
+      [name]: value,
+      ...(name === "team" && value !== "Others" ? { otherTeam: "" } : {}),
     }));
+  };
+
+  const isValidKocEmail = (email) => {
+    const regex = /^[a-zA-Z0-9._%+-]+@kockw\.com$/;
+    return regex.test(email);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!isValidKocEmail(formData.email)) {
+      toast.error("Only @kockw.com email addresses are allowed");
+      return;
+    }
+
     setLoading(true);
 
-    const result = await register(formData, token);
-    
+    const finalTeam =
+      formData.team === "Others" ? formData.otherTeam : formData.team;
+
+    const payload = {
+      ...formData,
+      team: finalTeam,
+    };
+
+    const result = await register(payload, token);
+
     if (result.success) {
-      toast.success('Registration successful!');
+      toast.success("Registration successful!");
       setTimeout(() => {
-        navigate('/user/view');
+        navigate("/user/view");
       }, 1500);
     } else {
       toast.error(result.error);
     }
-    
+
     setLoading(false);
   };
 
@@ -142,8 +170,10 @@ const UserRegistration = () => {
                     value={formData.email}
                     onChange={handleChange}
                     required
+                    pattern="^[a-zA-Z0-9._%+-]+@kockw\.com$"
+                    title="Email must be from @kockw.com domain"
                     className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
-                    placeholder="john@example.com"
+                    placeholder="name@kockw.com"
                   />
                 </div>
 
@@ -153,6 +183,7 @@ const UserRegistration = () => {
                     <Users className="w-4 h-4" />
                     Team
                   </label>
+
                   <select
                     name="team"
                     value={formData.team}
@@ -161,14 +192,37 @@ const UserRegistration = () => {
                     className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
                   >
                     <option value="">Select Team</option>
-                    <option value="Marketing">Marketing</option>
-                    <option value="Sales">Sales</option>
-                    <option value="Engineering">Engineering</option>
-                    <option value="Design">Design</option>
-                    <option value="Operations">Operations</option>
-                    <option value="Other">Other</option>
+                    <option value="Drilling Group Admin">
+                      Drilling Group Admin
+                    </option>
+                    <option value="Drilling Team I">Drilling Team (I)</option>
+                    <option value="Drilling Team II">Drilling Team (II)</option>
+                    <option value="Drilling Team III">
+                      Drilling Team (III)
+                    </option>
+                    <option value="Drilling Team IV">Drilling Team (IV)</option>
+                    <option value="Drilling Team V">Drilling Team (V)</option>
+                    <option value="Others">Others</option>
                   </select>
                 </div>
+
+                {formData.team === "Others" && (
+                  <div>
+                    <label className="text-sm font-medium mb-2 flex items-center gap-2">
+                      <Users className="w-4 h-4" />
+                      Enter Team Name
+                    </label>
+                    <input
+                      type="text"
+                      name="otherTeam"
+                      value={formData.otherTeam}
+                      onChange={handleChange}
+                      required
+                      className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                      placeholder="Enter your team name"
+                    />
+                  </div>
+                )}
 
                 {/* Mobile */}
                 <div>
@@ -183,7 +237,7 @@ const UserRegistration = () => {
                     onChange={handleChange}
                     required
                     className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
-                    placeholder="+1 234 567 8900"
+                    placeholder="999 9999 999"
                   />
                 </div>
               </div>
@@ -194,7 +248,7 @@ const UserRegistration = () => {
                 className="w-full py-3 text-lg font-semibold"
               >
                 {loading ? (
-                  'Processing...'
+                  "Processing..."
                 ) : (
                   <>
                     Register & Join Event
