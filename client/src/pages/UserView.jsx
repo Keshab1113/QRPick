@@ -50,20 +50,17 @@ const UserView = () => {
   };
 
   const handleSpinResult = (data) => {
-    setIsSpinning(true);
-    setTimeout(() => {
-      setIsSpinning(false);
-      setLatestWinner(data.winner);
+  // Remove setIsSpinning(true) and setTimeout
+  setLatestWinner(data.winner);
 
-      const newSelected = {
-        id: Date.now(),
-        name: data.winner.name,
-        koc_id: data.winner.koc_id,
-        created_at: data.timestamp,
-      };
-      setSelectedUsers((prev) => [newSelected, ...prev]);
-    }, 3000);
+  const newSelected = {
+    id: Date.now(),
+    name: data.winner.name,
+    koc_id: data.winner.koc_id,
+    created_at: data.timestamp,
   };
+  setSelectedUsers((prev) => [newSelected, ...prev]);
+};
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-950">
@@ -156,16 +153,9 @@ const UserView = () => {
                           <p className="font-bold text-lg">{winner.name}</p>
                         </div>
                         <p className="text-sm text-muted-foreground">
-                          {winner.team} • KOC ID: {winner.koc_id}
+                          {winner.koc_id}
                         </p>
-                        <div className="flex items-center gap-1 text-xs text-muted-foreground mt-2">
-                          <Clock className="w-3 h-3" />
-                          {new Date(winner.created_at).toLocaleTimeString([], {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                            second: "2-digit",
-                          })}
-                        </div>
+                        
                       </div>
                     </motion.div>
                   ))}

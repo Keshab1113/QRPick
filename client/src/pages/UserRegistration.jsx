@@ -67,14 +67,19 @@ const UserRegistration = () => {
       
       case "team":
         if (!value.trim()) error = "Please select a team";
-        else if (value === "Others" && !formData.otherTeam.trim()) {
-          error = "Please enter your team name";
-        }
+        // Don't validate otherTeam here - let it validate on its own blur event
         break;
       
       case "otherTeam":
-        if (formData.team === "Others" && !value.trim()) {
-          error = "Team name is required";
+        // Only validate if the field has been touched or if team is "Others"
+        if (formData.team === "Others") {
+          if (!value.trim()) {
+            error = "Team name is required";
+          } else if (value.trim().length < 2) {
+            error = "Team name must be at least 2 characters";
+          } else if (value.trim().length > 100) {
+            error = "Team name cannot exceed 100 characters";
+          }
         }
         break;
       
@@ -120,8 +125,14 @@ const UserRegistration = () => {
           if (!value.trim()) error = "Please select a team";
           break;
         case "otherTeam":
-          if (formData.team === "Others" && !value.trim()) {
-            error = "Team name is required";
+          if (formData.team === "Others") {
+            if (!value.trim()) {
+              error = "Team name is required";
+            } else if (value.trim().length < 2) {
+              error = "Team name must be at least 2 characters";
+            } else if (value.trim().length > 100) {
+              error = "Team name cannot exceed 100 characters";
+            }
           }
           break;
         case "mobile":
@@ -153,13 +164,19 @@ const UserRegistration = () => {
     if (errors[name]) {
       setErrors((prev) => ({ ...prev, [name]: "" }));
     }
+    
+    // Clear otherTeam error when team is changed away from "Others"
+    if (name === "team" && value !== "Others" && errors.otherTeam) {
+      setErrors((prev) => ({ ...prev, otherTeam: "" }));
+    }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     
     // Mark all fields as touched
-    const allFields = ["name", "koc_id", "email", "team", "mobile", "otherTeam"];
+    const allFields = ["name", "koc_id", "email", "team", "mobile"];
+    if (formData.team === "Others") allFields.push("otherTeam");
     allFields.forEach((field) => setTouched((prev) => ({ ...prev, [field]: true })));
     
     // Validate form

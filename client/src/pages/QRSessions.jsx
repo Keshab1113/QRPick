@@ -97,13 +97,7 @@ const QRSessions = () => {
           </div>
           
           <div className="space-y-2">
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-gray-500">Created:</span>
-              <span className="flex items-center gap-1">
-                <Clock className="w-3 h-3" />
-                {new Date(session.created_at).toLocaleString()}
-              </span>
-            </div>
+            
             
             <div className="pt-2 border-t">
               <p className="text-sm font-medium mb-2">Registration Link:</p>
@@ -130,16 +124,7 @@ const QRSessions = () => {
               </div>
             </div>
             
-            <div className="pt-2">
-              <Button
-                variant="default"
-                className="w-full flex items-center gap-2"
-                onClick={() => window.open(`/admin/session/${session.id}`, '_blank')}
-              >
-                <Eye className="w-4 h-4" />
-                Open Session Dashboard
-              </Button>
-            </div>
+            
           </div>
         </div>
       </CardContent>

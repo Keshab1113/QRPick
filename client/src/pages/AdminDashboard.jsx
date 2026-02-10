@@ -40,7 +40,9 @@ const AdminDashboard = () => {
 
   const handleNewUser = (newUser) => {
     // Only add if not already selected
-    const isAlreadySelected = selectedUsers.some(u => u.user_id === newUser.id);
+    const isAlreadySelected = selectedUsers.some(
+      (u) => u.user_id === newUser.id,
+    );
     if (!isAlreadySelected) {
       setRegisteredUsers((prev) => [newUser, ...prev]);
       toast.success(`${newUser.name} just joined!`, { icon: "👋" });
@@ -94,8 +96,10 @@ const AdminDashboard = () => {
 
     setIsSpinning(true);
     try {
-      await api.post(`/session/${activeSession.id}/spin`);
-      // Result will come via socket
+      const response = await api.post(`/session/${activeSession.id}/spin`);
+      if (response.data.success) {
+        toast.success("Spinning wheel started!");
+      }
     } catch (error) {
       const errorMsg = error.response?.data?.error || "Spin failed";
       toast.error(errorMsg);
@@ -104,31 +108,30 @@ const AdminDashboard = () => {
   };
 
   const handleSpinResult = (data) => {
-    setTimeout(() => {
-      setIsSpinning(false);
-      setLatestWinner(data.winner);
+    // Remove setTimeout - result already delayed by backend
+    setIsSpinning(false);
+    setLatestWinner(data.winner);
 
-      // Immediately remove winner from registered users
-      setRegisteredUsers((prev) =>
-        prev.filter((user) => user.id !== data.winner.id)
-      );
+    // Immediately remove winner from registered users
+    setRegisteredUsers((prev) =>
+      prev.filter((user) => user.id !== data.winner.id),
+    );
 
-      // Add winner to selected users at the END (chronological order)
-      const newSelected = {
-        id: Date.now(),
-        user_id: data.winner.id,
-        name: data.winner.name,
-        koc_id: data.winner.koc_id,
-        team: data.winner.team,
-        created_at: data.timestamp,
-      };
+    // Add winner to selected users at the END (chronological order)
+    const newSelected = {
+      id: Date.now(),
+      user_id: data.winner.id,
+      name: data.winner.name,
+      koc_id: data.winner.koc_id,
+      team: data.winner.team,
+      created_at: data.timestamp,
+    };
 
-      setSelectedUsers((prev) => [...prev, newSelected]);
+    setSelectedUsers((prev) => [...prev, newSelected]);
 
-      toast.success(`🎉 Winner: ${data.winner.name}`, {
-        duration: 5000,
-      });
-    }, 5000); // Match the 5-second spinner duration
+    toast.success(`🎉 Winner: ${data.winner.name}`, {
+      duration: 6000,
+    });
   };
 
   const fetchSelectedUsers = async () => {
@@ -175,14 +178,20 @@ const AdminDashboard = () => {
     if (!activeSession) return;
 
     try {
-      const response = await api.get(`/session/${activeSession.id}/export-registered`, {
-        responseType: "blob",
-      });
+      const response = await api.get(
+        `/session/${activeSession.id}/export-registered`,
+        {
+          responseType: "blob",
+        },
+      );
 
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement("a");
       link.href = url;
-      link.setAttribute("download", `registered_users_${activeSession.id}.xlsx`);
+      link.setAttribute(
+        "download",
+        `registered_users_${activeSession.id}.xlsx`,
+      );
       document.body.appendChild(link);
       link.click();
       link.remove();
@@ -258,8 +267,6 @@ const AdminDashboard = () => {
 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
-        
-
         {/* Three Column Layout */}
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           {/* Left Panel - Registered Users */}
@@ -313,7 +320,8 @@ const AdminDashboard = () => {
                       All users have been selected!
                     </p>
                     <p className="text-sm text-muted-foreground mt-2">
-                      {selectedUsers.length} winner{selectedUsers.length !== 1 ? 's' : ''} selected
+                      {selectedUsers.length} winner
+                      {selectedUsers.length !== 1 ? "s" : ""} selected
                     </p>
                   </div>
                 )}
@@ -332,7 +340,6 @@ const AdminDashboard = () => {
 
           {/* Center Panel - Dice Spinner */}
           <Card className="lg:col-span-2">
-            
             <CardContent className="pt-4 ">
               <DiceSpinner
                 users={registeredUsers}
@@ -379,7 +386,6 @@ const AdminDashboard = () => {
                         <p className="text-sm text-muted-foreground">
                           {user.team}
                         </p>
-                        
                       </div>
                       <div className="text-lg font-bold text-primary">
                         #{index + 1}
@@ -406,20 +412,28 @@ const AdminDashboard = () => {
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground">Available for Spin</p>
-                  <p className="text-3xl font-bold text-primary">{registeredUsers.length}</p>
+                  <p className="text-sm text-muted-foreground">
+                    Available for Spin
+                  </p>
+                  <p className="text-3xl font-bold text-primary">
+                    {registeredUsers.length}
+                  </p>
                 </div>
                 <Users className="w-12 h-12 text-primary/20" />
               </div>
             </CardContent>
           </Card>
-          
+
           <Card>
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground">Already Selected</p>
-                  <p className="text-3xl font-bold text-green-600">{selectedUsers.length}</p>
+                  <p className="text-sm text-muted-foreground">
+                    Already Selected
+                  </p>
+                  <p className="text-3xl font-bold text-green-600">
+                    {selectedUsers.length}
+                  </p>
                 </div>
                 <Trophy className="w-12 h-12 text-green-600/20" />
               </div>
@@ -430,7 +444,9 @@ const AdminDashboard = () => {
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground">Total Registered</p>
+                  <p className="text-sm text-muted-foreground">
+                    Total Registered
+                  </p>
                   <p className="text-3xl font-bold text-blue-600">
                     {registeredUsers.length + selectedUsers.length}
                   </p>

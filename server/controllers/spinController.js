@@ -74,14 +74,15 @@ const performSpin = async (req, res) => {
       'INSERT INTO selected_users (spin_id, user_id) VALUES (?, ?)',
       [spinResult.insertId, winner.id]
     );
-    
-    // Emit real-time update
-    io.to(`session_${session_id}`).emit('spin_result', {
-      winner,
-      spin_id: spinResult.insertId,
-      remaining_users: users.length - 1,
-      timestamp: new Date().toISOString()
-    });
+
+    setTimeout(() => {
+      io.to(`session_${session_id}`).emit('spin_result', {
+        winner,
+        spin_id: spinResult.insertId,
+        remaining_users: users.length - 1,
+        timestamp: new Date().toISOString()
+      });
+    }, 6000);
     
     res.json({
       winner,

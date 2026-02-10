@@ -21,7 +21,7 @@ const DiceSpinner = ({ users, onSpin, isSpinning, winner, isAdmin }) => {
   const [showConfetti, setShowConfetti] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const audioRef = useRef(null);
-  const spinDuration = 6000; // 5 seconds in milliseconds
+  const spinDuration = 6000; // 6 seconds in milliseconds
   const { width: windowWidth, height: windowHeight } = useWindowSize();
 
   // Initialize audio
