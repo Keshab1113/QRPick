@@ -298,7 +298,7 @@ const AdminDashboard = () => {
                       <div>
                         <p className="font-medium">{user.name}</p>
                         <p className="text-sm text-muted-foreground">
-                          KOC: {user.koc_id} • {user.team}
+                          {user.team}
                         </p>
                       </div>
                       <UserPlus className="w-4 h-4 text-green-500" />
@@ -332,10 +332,8 @@ const AdminDashboard = () => {
 
           {/* Center Panel - Dice Spinner */}
           <Card className="lg:col-span-2">
-            <CardHeader>
-              <CardTitle className="text-center">Dice Spinner</CardTitle>
-            </CardHeader>
-            <CardContent className="pt-4">
+            
+            <CardContent className="pt-4 ">
               <DiceSpinner
                 users={registeredUsers}
                 onSpin={handleSpin}
@@ -379,15 +377,9 @@ const AdminDashboard = () => {
                           <p className="font-medium">{user.name}</p>
                         </div>
                         <p className="text-sm text-muted-foreground">
-                          KOC: {user.koc_id} • {user.team}
+                          {user.team}
                         </p>
-                        <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
-                          <Clock className="w-3 h-3" />
-                          {new Date(user.created_at).toLocaleTimeString([], {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}
-                        </div>
+                        
                       </div>
                       <div className="text-lg font-bold text-primary">
                         #{index + 1}

@@ -150,7 +150,7 @@ const DiceSpinner = ({ users, onSpin, isSpinning, winner, isAdmin }) => {
   ];
 
   return (
-    <div className="flex flex-col items-center justify-center space-y-8">
+    <div className="flex flex-col items-center justify-center space-y-8 ">
       {showConfetti && (
         <Confetti
           width={windowWidth}
@@ -199,7 +199,7 @@ const DiceSpinner = ({ users, onSpin, isSpinning, winner, isAdmin }) => {
       </div>
 
       {/* Spinner Circle */}
-      <div className="relative w-96 h-96 flex items-center justify-center">
+      <div className="relative w-96 h-96 md:h-[500px] md:w-[500px] flex items-center justify-center ">
         {/* Outer decorative rings */}
         <div className="absolute inset-0 rounded-full border-8 border-gradient-to-r from-blue-400/30 to-purple-400/30 animate-pulse" />
         <div className="absolute inset-4 rounded-full border-4 border-gradient-to-r from-blue-300/20 to-purple-300/20" />
@@ -211,7 +211,7 @@ const DiceSpinner = ({ users, onSpin, isSpinning, winner, isAdmin }) => {
 
         {/* Main spinner */}
         <motion.div
-          className="relative w-80 h-80 rounded-full bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border-8 border-slate-700 shadow-2xl flex items-center justify-center overflow-hidden"
+          className="relative w-80 h-80 md:h-[450px] md:w-[450px]  rounded-full bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border-8 border-slate-700 shadow-2xl flex items-center justify-center overflow-hidden"
           animate={{
             rotate: rotation,
             scale: isSpinning ? 1.05 : 1,
