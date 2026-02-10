@@ -7,7 +7,7 @@ const getRegisteredUsers = async (req, res) => {
     
     // Get users who are registered but NOT yet selected as winners
     const [users] = await pool.execute(
-      `SELECT u.id, u.name, u.koc_id, u.team, u.created_at 
+      `SELECT u.id, u.name, u.koc_id, u.created_at 
        FROM users u
        WHERE u.qr_session_id = ? 
          AND u.is_active = TRUE
@@ -35,7 +35,7 @@ const performSpin = async (req, res) => {
     
     // Get only users who haven't been selected yet
     const [users] = await pool.execute(
-      `SELECT u.id, u.name, u.koc_id, u.team
+      `SELECT u.id, u.name, u.koc_id
        FROM users u
        WHERE u.qr_session_id = ? 
          AND u.is_active = TRUE
@@ -101,7 +101,7 @@ const getSelectedUsers = async (req, res) => {
     const { session_id } = req.params;
     
     const [selected] = await pool.execute(
-      `SELECT su.id, su.created_at, u.name, u.koc_id, u.team, u.id as user_id
+      `SELECT su.id, su.created_at, u.name, u.koc_id, u.id as user_id
        FROM selected_users su
        JOIN users u ON su.user_id = u.id
        JOIN spins s ON su.spin_id = s.id
@@ -122,7 +122,7 @@ const exportToExcel = async (req, res) => {
     const { session_id } = req.params;
     
     const [selected] = await pool.execute(
-      `SELECT u.name, u.koc_id, u.email, u.team, u.mobile, 
+      `SELECT u.name, u.koc_id, u.email, 
               su.created_at as selected_at,
               ROW_NUMBER() OVER (ORDER BY su.created_at ASC) as selection_order
        FROM selected_users su
@@ -142,8 +142,6 @@ const exportToExcel = async (req, res) => {
       'Name': row.name,
       'KOC ID': row.koc_id,
       'Email': row.email,
-      'Team': row.team,
-      'Mobile': row.mobile,
       'Selected At': new Date(row.selected_at).toLocaleString()
     }));
     
@@ -155,8 +153,6 @@ const exportToExcel = async (req, res) => {
       {wch: 25}, // Name
       {wch: 15}, // KOC ID
       {wch: 30}, // Email
-      {wch: 25}, // Team
-      {wch: 15}, // Mobile
       {wch: 25}  // Selected At
     ];
     worksheet['!cols'] = colWidths;
@@ -181,7 +177,7 @@ const exportRegisteredToExcel = async (req, res) => {
     
     // Export ALL registered users (including selected ones)
     const [registered] = await pool.execute(
-      `SELECT name, koc_id, email, team, mobile, created_at
+      `SELECT name, koc_id, email, created_at
        FROM users 
        WHERE qr_session_id = ? AND is_active = TRUE
        ORDER BY created_at ASC`,

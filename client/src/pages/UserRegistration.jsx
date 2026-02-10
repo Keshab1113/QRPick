@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { User, Mail, Hash, Users, Phone, ArrowRight, AlertCircle } from "lucide-react";
+import { User, Mail, Hash, ArrowRight, AlertCircle } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import api from "../services/api";
 import toast from "react-hot-toast";
@@ -22,9 +22,6 @@ const UserRegistration = () => {
     name: "",
     koc_id: "",
     email: "",
-    team: "",
-    otherTeam: "",
-    mobile: "",
   });
 
   const [errors, setErrors] = useState({});
@@ -65,29 +62,6 @@ const UserRegistration = () => {
         else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) error = "Invalid email format";
         break;
       
-      case "team":
-        if (!value.trim()) error = "Please select a team";
-        // Don't validate otherTeam here - let it validate on its own blur event
-        break;
-      
-      case "otherTeam":
-        // Only validate if the field has been touched or if team is "Others"
-        if (formData.team === "Others") {
-          if (!value.trim()) {
-            error = "Team name is required";
-          } else if (value.trim().length < 2) {
-            error = "Team name must be at least 2 characters";
-          } else if (value.trim().length > 100) {
-            error = "Team name cannot exceed 100 characters";
-          }
-        }
-        break;
-      
-      case "mobile":
-        if (!value.trim()) error = "Mobile number is required";
-        else if (!/^[0-9]{8,12}$/.test(value)) error = "Must be 8-12 digits only";
-        break;
-      
       default:
         break;
     }
@@ -97,8 +71,7 @@ const UserRegistration = () => {
   };
 
   const validateForm = () => {
-    const fieldsToValidate = ["name", "koc_id", "email", "team", "mobile"];
-    if (formData.team === "Others") fieldsToValidate.push("otherTeam");
+    const fieldsToValidate = ["name", "koc_id", "email"];
     
     let isValid = true;
     const newErrors = {};
@@ -121,24 +94,6 @@ const UserRegistration = () => {
           else if (!value.includes("@kockw.com")) error = "Only @kockw.com emails allowed";
           else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) error = "Invalid email format";
           break;
-        case "team":
-          if (!value.trim()) error = "Please select a team";
-          break;
-        case "otherTeam":
-          if (formData.team === "Others") {
-            if (!value.trim()) {
-              error = "Team name is required";
-            } else if (value.trim().length < 2) {
-              error = "Team name must be at least 2 characters";
-            } else if (value.trim().length > 100) {
-              error = "Team name cannot exceed 100 characters";
-            }
-          }
-          break;
-        case "mobile":
-          if (!value.trim()) error = "Mobile number is required";
-          else if (!/^[0-9]{8,12}$/.test(value)) error = "Must be 8-12 digits only";
-          break;
       }
       
       if (error) {
@@ -157,17 +112,11 @@ const UserRegistration = () => {
     setFormData((prev) => ({
       ...prev,
       [name]: value,
-      ...(name === "team" && value !== "Others" ? { otherTeam: "" } : {}),
     }));
     
     // Clear error when user starts typing
     if (errors[name]) {
       setErrors((prev) => ({ ...prev, [name]: "" }));
-    }
-    
-    // Clear otherTeam error when team is changed away from "Others"
-    if (name === "team" && value !== "Others" && errors.otherTeam) {
-      setErrors((prev) => ({ ...prev, otherTeam: "" }));
     }
   };
 
@@ -175,8 +124,7 @@ const UserRegistration = () => {
     e.preventDefault();
     
     // Mark all fields as touched
-    const allFields = ["name", "koc_id", "email", "team", "mobile"];
-    if (formData.team === "Others") allFields.push("otherTeam");
+    const allFields = ["name", "koc_id", "email"];
     allFields.forEach((field) => setTouched((prev) => ({ ...prev, [field]: true })));
     
     // Validate form
@@ -187,11 +135,8 @@ const UserRegistration = () => {
 
     setLoading(true);
 
-    const finalTeam = formData.team === "Others" ? formData.otherTeam : formData.team;
-
     const payload = {
       ...formData,
-      team: finalTeam,
       session_token: token,
     };
 
@@ -228,21 +173,6 @@ const UserRegistration = () => {
       <span>{message}</span>
     </div>
   );
-
-  // Add this to your AuthContext or api service to handle validation errors
-  const handleApiValidationError = (error) => {
-    if (error.response?.status === 400 && error.response?.data?.details) {
-      return {
-        success: false,
-        errors: error.response.data.details,
-        error: "Validation failed"
-      };
-    }
-    return {
-      success: false,
-      error: error.response?.data?.error || "Registration failed"
-    };
-  };
 
   if (!sessionValid) {
     return (
@@ -348,81 +278,6 @@ const UserRegistration = () => {
                     placeholder="name@kockw.com"
                   />
                   {errors.email && <ErrorMessage message={errors.email} />}
-                </div>
-
-                {/* Team */}
-                <div>
-                  <label className="text-sm font-medium mb-2 flex items-center gap-2">
-                    <Users className="w-4 h-4" />
-                    Team *
-                  </label>
-                  <select
-                    name="team"
-                    value={formData.team}
-                    onChange={handleChange}
-                    onBlur={() => handleBlur("team")}
-                    required
-                    className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent ${
-                      errors.team ? "border-destructive" : ""
-                    }`}
-                  >
-                    <option value="">Select Team</option>
-                    <option value="Drilling Group Admin">
-                      Drilling Group Admin
-                    </option>
-                    <option value="Drilling Team I">Drilling Team (I)</option>
-                    <option value="Drilling Team II">Drilling Team (II)</option>
-                    <option value="Drilling Team III">
-                      Drilling Team (III)
-                    </option>
-                    <option value="Drilling Team IV">Drilling Team (IV)</option>
-                    <option value="Drilling Team V">Drilling Team (V)</option>
-                    <option value="Others">Others</option>
-                  </select>
-                  {errors.team && <ErrorMessage message={errors.team} />}
-                </div>
-
-                {formData.team === "Others" && (
-                  <div>
-                    <label className="text-sm font-medium mb-2 flex items-center gap-2">
-                      <Users className="w-4 h-4" />
-                      Enter Team Name *
-                    </label>
-                    <input
-                      type="text"
-                      name="otherTeam"
-                      value={formData.otherTeam}
-                      onChange={handleChange}
-                      onBlur={() => handleBlur("otherTeam")}
-                      required={formData.team === "Others"}
-                      className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent ${
-                        errors.otherTeam ? "border-destructive" : ""
-                      }`}
-                      placeholder="Enter your team name"
-                    />
-                    {errors.otherTeam && <ErrorMessage message={errors.otherTeam} />}
-                  </div>
-                )}
-
-                {/* Mobile */}
-                <div>
-                  <label className="text-sm font-medium mb-2 flex items-center gap-2">
-                    <Phone className="w-4 h-4" />
-                    Mobile Number *
-                  </label>
-                  <input
-                    type="tel"
-                    name="mobile"
-                    value={formData.mobile}
-                    onChange={handleChange}
-                    onBlur={() => handleBlur("mobile")}
-                    required
-                    className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent ${
-                      errors.mobile ? "border-destructive" : ""
-                    }`}
-                    placeholder="9999999999 (8-12 digits)"
-                  />
-                  {errors.mobile && <ErrorMessage message={errors.mobile} />}
                 </div>
               </div>
 

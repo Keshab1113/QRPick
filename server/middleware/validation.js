@@ -52,53 +52,11 @@ const schemas = {
         "string.pattern.base": "Only @kockw.com email addresses are allowed",
       }),
 
-    team: Joi.string().min(1).max(100).required().messages({
-      "string.min": "Please select a team",
-      "string.max": "Team selection is too long",
-      "string.empty": "Please select a team",
-      "any.required": "Please select a team",
-    }),
-
-    mobile: Joi.string()
-      .pattern(/^[0-9]{8,12}$/)
-      .required()
-      .messages({
-        "string.pattern.base":
-          "Mobile number must contain only digits and be between 8 to 12 digits",
-        "string.empty": "Mobile number is required",
-        "any.required": "Mobile number is required",
-      }),
-
     session_token: Joi.string().required().messages({
       "string.empty": "Session token is required",
       "any.required": "Session token is required",
     }),
-
-    otherTeam: Joi.string().allow('').optional(),
-  }).custom((value, helpers) => {
-    // Custom validation for "Others" team selection
-    if (value.team === "Others") {
-      if (!value.otherTeam || value.otherTeam.trim() === "") {
-        return helpers.error("any.invalid", {
-          message: "Please enter your team name when selecting Others",
-        });
-      }
-      
-      if (value.otherTeam.trim().length < 2) {
-        return helpers.error("any.invalid", {
-          message: "Team name must be at least 2 characters long",
-        });
-      }
-      
-      if (value.otherTeam.trim().length > 100) {
-        return helpers.error("any.invalid", {
-          message: "Team name cannot exceed 100 characters",
-        });
-      }
-    }
-    
-    return value;
-  }, "Custom team validation"),
+  }),
 };
 
 module.exports = { validateRequest, schemas };

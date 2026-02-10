@@ -46,7 +46,7 @@ const adminLogin = async (req, res) => {
 
 const registerUser = async (req, res) => {
   try {
-    const { name, koc_id, email, team, mobile, session_token } = req.body;
+    const { name, koc_id, email, session_token } = req.body;
     
     // Find QR session
     const [sessions] = await pool.execute(
@@ -81,8 +81,6 @@ const registerUser = async (req, res) => {
           name: existingUser.name,
           koc_id: existingUser.koc_id,
           email: existingUser.email,
-          team: existingUser.team,
-          mobile: existingUser.mobile,
           session_id: existingUser.qr_session_id
         },
         message: 'Welcome back! You were already registered for this session.'
@@ -102,43 +100,11 @@ const registerUser = async (req, res) => {
       });
     }
     
-    // Additional check: Check if email exists globally (across all sessions) - optional
-    // Uncomment if you want to prevent same email across different sessions
-    /*
-    const [globalEmailCheck] = await pool.execute(
-      'SELECT * FROM users WHERE email = ? AND is_active = TRUE',
-      [email]
-    );
-    
-    if (globalEmailCheck.length > 0) {
-      return res.status(400).json({ 
-        error: 'This email is already registered in another session',
-        field: 'email'
-      });
-    }
-    */
-    
-    // Additional check: Check if KOC ID exists globally (across all sessions) - optional
-    // Uncomment if you want to prevent same KOC ID across different sessions
-    /*
-    const [globalKocCheck] = await pool.execute(
-      'SELECT * FROM users WHERE koc_id = ? AND is_active = TRUE',
-      [koc_id]
-    );
-    
-    if (globalKocCheck.length > 0) {
-      return res.status(400).json({ 
-        error: 'This KOC ID is already registered in another session',
-        field: 'koc_id'
-      });
-    }
-    */
-    
     // Create user
     const [result] = await pool.execute(
-      `INSERT INTO users (name, koc_id, email, team, mobile, qr_session_id) 
-       VALUES (?, ?, ?, ?, ?, ?)`,
-      [name, koc_id, email, team, mobile, session.id]
+      `INSERT INTO users (name, koc_id, email, qr_session_id) 
+       VALUES (?, ?, ?, ?)`,
+      [name, koc_id, email, session.id]
     );
     
     const userToken = jwt.sign(
@@ -154,7 +120,6 @@ const registerUser = async (req, res) => {
         id: result.insertId,
         name,
         koc_id,
-        team,
         created_at: new Date().toISOString()
       });
     }
@@ -166,8 +131,6 @@ const registerUser = async (req, res) => {
         name,
         koc_id,
         email,
-        team,
-        mobile,
         session_id: session.id
       }
     });
@@ -201,7 +164,7 @@ const getUserSession = async (req, res) => {
     
     // Get all users in this session
     const [users] = await pool.execute(
-      `SELECT id, name, koc_id, team, created_at 
+      `SELECT id, name, koc_id, created_at 
        FROM users 
        WHERE qr_session_id = ? AND is_active = TRUE 
        ORDER BY created_at DESC`,
@@ -210,7 +173,7 @@ const getUserSession = async (req, res) => {
     
     // Get selected users
     const [selected] = await pool.execute(
-      `SELECT su.*, u.name, u.koc_id, u.team 
+      `SELECT su.*, u.name, u.koc_id 
        FROM selected_users su
        JOIN users u ON su.user_id = u.id
        JOIN spins s ON su.spin_id = s.id
