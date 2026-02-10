@@ -50,17 +50,17 @@ const UserView = () => {
   };
 
   const handleSpinResult = (data) => {
-  // Remove setIsSpinning(true) and setTimeout
-  setLatestWinner(data.winner);
+    // Remove setIsSpinning(true) and setTimeout
+    setLatestWinner(data.winner);
 
-  const newSelected = {
-    id: Date.now(),
-    name: data.winner.name,
-    koc_id: data.winner.koc_id,
-    created_at: data.timestamp,
+    const newSelected = {
+      id: Date.now(),
+      name: data.winner.name,
+      koc_id: data.winner.koc_id,
+      created_at: data.timestamp,
+    };
+    setSelectedUsers((prev) => [newSelected, ...prev]);
   };
-  setSelectedUsers((prev) => [newSelected, ...prev]);
-};
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-950">
@@ -69,7 +69,7 @@ const UserView = () => {
         <div className="container mx-auto px-4 py-4">
           <div className="flex justify-between items-center">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+              <h1 className="md:text-2xl text-lg font-bold text-gray-900 dark:text-white">
                 Live Event Dashboard
               </h1>
               <p className="text-sm text-gray-600 dark:text-gray-400">
@@ -79,7 +79,8 @@ const UserView = () => {
             <div className="flex items-center gap-2 px-4 py-2 bg-primary/10 rounded-lg">
               <Users className="w-5 h-5 text-primary" />
               <span className="font-semibold">
-                {registeredUsers.length} Participants
+                {registeredUsers.length}{" "}
+                <span className=" md:block hidden">Participants</span>
               </span>
             </div>
           </div>
@@ -90,9 +91,6 @@ const UserView = () => {
       <main className="container mx-auto px-4 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <Card className="lg:col-span-2">
-            <CardHeader>
-              <CardTitle className="text-center">Live Dice Roll</CardTitle>
-            </CardHeader>
             <CardContent>
               <div className="relative">
                 {isSpinning && (
@@ -136,7 +134,7 @@ const UserView = () => {
             <CardContent>
               <div className="space-y-4 max-h-[500px] overflow-y-auto pr-2">
                 <AnimatePresence>
-                  {selectedUsers.map((winner, index) => (
+                  {[...selectedUsers].reverse().map((winner, index) => (
                     <motion.div
                       key={winner.id}
                       initial={{ opacity: 0, scale: 0.9 }}
@@ -155,7 +153,6 @@ const UserView = () => {
                         <p className="text-sm text-muted-foreground">
                           {winner.koc_id}
                         </p>
-                        
                       </div>
                     </motion.div>
                   ))}
